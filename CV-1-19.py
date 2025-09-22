@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import os
-# %%
+import sys
+
 
 def validate_parameters(min_line_length, max_line_gap, canny_low, canny_high):
     """
@@ -157,83 +158,101 @@ def parse_arguments():
         'image_path',
         help='Путь к входному изображению'
     )
-    
+
     # Опциональные аргументы с значениями по умолчанию
     parser.add_argument(
-        '--min-line-length', 
+        '--min-line-length',
+        '-minl',
         type=int, 
         default=50,
         help='Минимальная длина линии для обнаружения (по умолчанию: 50)'
     )
     
     parser.add_argument(
-        '--max-line-gap', 
+        '--max-line-gap',
+        '-maxl',
         type=int, 
         default=10,
         help='Максимальный разрыв между линиями для их соединения (по умолчанию: 10)'
     )
     
     parser.add_argument(
-        '--canny-low', 
+        '--canny-low',
+        '-cl',
         type=int, 
         default=50,
         help='Нижний порог для детектора Кэнни (по умолчанию: 50)'
     )
     
     parser.add_argument(
-        '--canny-high', 
+        '--canny-high',
+        '-ch',
         type=int, 
         default=150,
         help='Верхний порог для детектора Кэнни (по умолчанию: 150)'
     )
     
     parser.add_argument(
-        '--output-path', 
+        '--output-path',
+        '-out',
         help='Путь для сохранения результата'
     )
     
-    return parser.parse_args()
+    return parser
 
 
 def detect_lines_from_args():
     """
     Основная функция для демонстрации работы детектора линий.
     """
-    # Парсинг аргументов
-    args = parse_arguments()
+    parser = parse_arguments()
+
+    try:
+        # Парсинг аргументов
+        args = parser.parse_args()
+
+        # Проверяем обязательный аргумент
+        if not args.image_path:
+            print("Ошибка: не указан обязательный аргумент image_path")
+            print("Используйте --help для просмотра справки")
+            return 1
+        
+        print(f"Параметры:")
+        print(f"  min_line_length = {args.min_line_length}")
+        print(f"  max_line_gap = {args.max_line_gap}")
+        print(f"  canny_low = {args.canny_low}")
+        print(f"  canny_high = {args.canny_high}")
+        print(f"  output_path = {args.output_path}")
+        
+        # Обработка изображения
+        result_image, num_lines, original_image, edges = detect_lines_complete(
+            image_path=args.image_path,
+            min_line_length=args.min_line_length,
+            max_line_gap=args.max_line_gap,
+            canny_low=args.canny_low,
+            canny_high=args.canny_high,
+            output_path=args.output_path
+        )
+        
+        print(f"Обнаружено линий: {num_lines}")
+        
+        # Проверка метрики
+        if num_lines > 2:
+            print("Метрика выполнена: найдено более 2 линий")
+        else:
+            print("Метрика не выполнена: найдено 2 или менее линий")
+
+    except SystemExit:
+        # Перехватываем SystemExit от argparse
+        print("Ошибка в аргументах командной строки")
+        print("Используйте --help для просмотра справки")
+        return 1
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        return 1
     
-    print(f"Параметры:")
-    print(f"  min_line_length = {args.min_line_length}")
-    print(f"  max_line_gap = {args.max_line_gap}")
-    print(f"  canny_low = {args.canny_low}")
-    print(f"  canny_high = {args.canny_high}")
-    print(f"  output_path = {args.output_path}")
-    
-    # Обработка изображения
-    result_image, num_lines, original_image, edges = detect_lines_complete(
-        image_path=args.image_path,
-        min_line_length=args.min_line_length,
-        max_line_gap=args.max_line_gap,
-        canny_low=args.canny_low,
-        canny_high=args.canny_high,
-        output_path=args.output_path
-    )
-    
-    print(f"Обнаружено линий: {num_lines}")
-    
-    # Проверка метрики
-    if num_lines > 2:
-        print("Метрика выполнена: найдено более 2 линий")
-    else:
-        print("Метрика не выполнена: найдено 2 или менее линий")
+    return 0
 
 
 if __name__ == "__main__":
-    try:
-        detect_lines_from_args()
-    except FileNotFoundError as e:
-        print(f"Ошибка: Файл не найден - {e}")
-    except ValueError as e:
-        print(f"Ошибка: Неверные параметры - {e}")
-    except Exception as e:
-        print(f"Неожиданная ошибка: {e}")
+    sys.exit(detect_lines_from_args())
